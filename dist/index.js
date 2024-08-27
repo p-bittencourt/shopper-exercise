@@ -1,7 +1,5 @@
 import 'dotenv/config';
-// import { GenerativeAIService } from './services/GenerativeAIService.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GoogleAIFileManager } from '@google/generative-ai/server';
+import { GoogleAIService } from './services/GenerativeAIService.js';
 import express from 'express';
 const app = express();
 const port = process.env.PORT || 3000;
@@ -10,14 +8,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 async function run() {
     // Google AI File Manager and Generative AI
-    const fileManager = new GoogleAIFileManager(apiKey);
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-    // Upload file
-    const uploadResponse = await fileManager.uploadFile('./src/hidro-1.png', {
+    const googleAIService = new GoogleAIService(apiKey);
+    // Upload file and configure model
+    const uploadResponse = await googleAIService.fileManager.uploadFile('./src/hidro-1.png', {
         mimeType: 'image/png',
         displayName: 'Hidrometro',
     });
+    const model = googleAIService.genAI.getGenerativeModel({
+        model: 'gemini-1.5-flash',
+    });
+    // Get Gemini result
     const result = await model.generateContent([
         {
             fileData: {
@@ -26,7 +26,7 @@ async function run() {
             },
         },
         {
-            text: 'Faça a leitura do hidrômetro e retorne apenas o valor lido em formato "integer"',
+            text: 'Descreva o produto que você está vendo',
         },
     ]);
     console.log(result.response.text());

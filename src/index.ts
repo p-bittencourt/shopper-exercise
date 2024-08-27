@@ -1,7 +1,5 @@
 import 'dotenv/config';
-// import { GenerativeAIService } from './services/GenerativeAIService.js';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import { GoogleAIFileManager } from '@google/generative-ai/server';
+import { GoogleAIService } from './services/GenerativeAIService.js';
 import express from 'express';
 
 const app = express();
@@ -13,16 +11,21 @@ app.use(express.urlencoded({ extended: true }));
 
 async function run() {
   // Google AI File Manager and Generative AI
-  const fileManager = new GoogleAIFileManager(apiKey);
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const googleAIService = new GoogleAIService(apiKey);
 
-  // Upload file
-  const uploadResponse = await fileManager.uploadFile('./src/hidro-1.png', {
-    mimeType: 'image/png',
-    displayName: 'Hidrometro',
+  // Upload file and configure model
+  const uploadResponse = await googleAIService.fileManager.uploadFile(
+    './src/hidro-1.png',
+    {
+      mimeType: 'image/png',
+      displayName: 'Hidrometro',
+    }
+  );
+  const model = googleAIService.genAI.getGenerativeModel({
+    model: 'gemini-1.5-flash',
   });
 
+  // Get Gemini result
   const result = await model.generateContent([
     {
       fileData: {
@@ -38,7 +41,7 @@ async function run() {
   console.log(result.response.text());
 }
 
-run();
+run().catch(console.error);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

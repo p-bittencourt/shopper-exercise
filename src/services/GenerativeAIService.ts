@@ -1,25 +1,14 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleAIFileManager } from '@google/generative-ai/server';
 
-interface IGenerativeAIService {
-  initializeModel(modelName: string): void;
-  generateContent(prompt: string): Promise<string>;
-}
-
-export class GenerativeAIService implements IGenerativeAIService {
-  private genAI: any;
-  private model: any;
+export class GoogleAIService {
+  private apiKey: string;
+  public fileManager: GoogleAIFileManager;
+  public genAI: GoogleGenerativeAI;
 
   constructor(apiKey: string) {
+    this.apiKey = apiKey;
+    this.fileManager = new GoogleAIFileManager(apiKey);
     this.genAI = new GoogleGenerativeAI(apiKey);
-  }
-
-  initializeModel(modelName: string): void {
-    this.model = this.genAI.getGenerativeModel({ model: modelName });
-  }
-
-  async generateContent(prompt: string): Promise<string> {
-    const result = await this.model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
   }
 }
