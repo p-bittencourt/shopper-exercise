@@ -9,19 +9,21 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-require("dotenv/config");
-const GenerativeAIService_1 = require("./services/GenerativeAIService");
-function run() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const apiKey = process.env.GEMINI_API_KEY;
-        if (!apiKey) {
-            throw new Error('GEMINI_API_KEY environment variable is not set.');
-        }
-        const genAIService = new GenerativeAIService_1.GenerativeAIService(apiKey);
-        genAIService.initializeModel('gemini-1.5-flash');
-        const prompt = 'Write a short story about a magic backpack.';
-        const text = yield genAIService.generateContent(prompt);
-        console.log(text);
-    });
+exports.GenerativeAIService = void 0;
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+class GenerativeAIService {
+    constructor(apiKey) {
+        this.genAI = new GoogleGenerativeAI(apiKey);
+    }
+    initializeModel(modelName) {
+        this.model = this.genAI.getGenerativeModel({ model: modelName });
+    }
+    generateContent(prompt) {
+        return __awaiter(this, void 0, void 0, function* () {
+            const result = yield this.model.generateContent(prompt);
+            const response = yield result.response;
+            return response.text();
+        });
+    }
 }
-run();
+exports.GenerativeAIService = GenerativeAIService;
