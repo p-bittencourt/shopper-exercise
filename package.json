@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Exercise for Shopper",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "tsc && nodemon dist/index.js",
     "build": "tsc",
