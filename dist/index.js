@@ -6,7 +6,8 @@ const port = process.env.PORT || 3000;
 const apiKey = process.env.GEMINI_API_KEY || '';
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-async function run() {
+app.post('/upload', (req, res) => { });
+async function getMeasureAI() {
     // Google AI File Manager and Generative AI
     const googleAIService = new GoogleAIService(apiKey);
     // Upload file and configure model
@@ -31,7 +32,7 @@ async function run() {
     ]);
     console.log(result.response.text());
 }
-run();
+getMeasureAI().catch();
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
