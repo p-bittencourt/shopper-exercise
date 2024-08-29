@@ -13,6 +13,9 @@ RUN npm install
 # Copiar o restante do código da aplicação
 COPY . .
 
+# Create the uploads directory
+RUN mkdir -p /app/uploads
+
 # Expor a porta na qual a aplicação vai rodar
 EXPOSE 3000
 

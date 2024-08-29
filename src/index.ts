@@ -1,49 +1,22 @@
 import 'dotenv/config';
-import { GoogleAIService } from './services/GenerativeAIService.js';
 import express from 'express';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import uploadController from './controllers/uploadController.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
-const apiKey = process.env.GEMINI_API_KEY || '';
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-app.post('/upload', (req, res) => {});
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(express.json({ limit: '50mb' })); // Adjust the limit as needed
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Adjust the limit as needed
 
-async function getMeasureAI() {
-  // Google AI File Manager and Generative AI
-  const googleAIService = new GoogleAIService(apiKey);
-
-  // Upload file and configure model
-  const uploadResponse = await googleAIService.fileManager.uploadFile(
-    './src/hidro-1.png',
-    {
-      mimeType: 'image/png',
-      displayName: 'Hidrometro',
-    }
-  );
-  const model = googleAIService.genAI.getGenerativeModel({
-    model: 'gemini-1.5-flash',
-  });
-
-  // Get Gemini result
-  const result = await model.generateContent([
-    {
-      fileData: {
-        mimeType: uploadResponse.file.mimeType,
-        fileUri: uploadResponse.file.uri,
-      },
-    },
-    {
-      text: 'Descreva o produto que você está vendo',
-    },
-  ]);
-
-  console.log(result.response.text());
-}
-
-getMeasureAI().catch();
+app.post('/upload', uploadController);
+app.patch('/confirm', (req, res) => {});
+app.get('/:customerCode/list', (req, res) => {});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
