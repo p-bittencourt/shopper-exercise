@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { GoogleAIService } from '../services/GenerativeAIService.js';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import customers from '../models/testCustomers.js';
@@ -60,7 +61,18 @@ function validateRequest(data) {
     }
     return { isValid: true };
 }
-export default async function uploadImage(req, res) {
+async function processImage(image, customer_code, measure_datetime, measure_type, req) {
+    const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+    const imageType = matches[1];
+    const base64dData = matches[2];
+    const imageBuffer = Buffer.from(base64dData, 'base64');
+    const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
+    const imagePath = path.join(rootPath, 'uploads', imageName);
+    fs.writeFileSync(imagePath, imageBuffer);
+    const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
+    return imagePath;
+}
+export default async function handlePostUpload(req, res) {
     try {
         const { image, customer_code, measure_datetime, measure_type, } = req.body;
         // 1. Validar entradas
@@ -77,6 +89,7 @@ export default async function uploadImage(req, res) {
                 error_description: validatedRequest.error_description,
             });
         }
+        // 2. Validar leitura
         const hasExistingMeasure = checkExistingMeasure(customer_code, measure_datetime, measure_type);
         if (!hasExistingMeasure.validClient) {
             return res.status(408).json({
@@ -90,36 +103,12 @@ export default async function uploadImage(req, res) {
                 error_description: hasExistingMeasure.error_description,
             });
         }
-        return res.status(200).json({ working: 'yep' });
-        /*
-    
-        KEEP THIS UNUSED WHILE TESTING OTHER STEPS
-    
-        // Extair o tipo da imagem e os dados base64
-        const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-        if (!matches || matches.length !== 3) {
-          return res.status(400).json({ error: 'Formato de imagem inválido. ' });
-        }
-    
-        const imageType = matches[1];
-        const base64dData = matches[2];
-    
-        const imageBuffer = Buffer.from(base64dData, 'base64');
-    
-        const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
-        const imagePath = path.join(rootPath, 'uploads', imageName);
-    
-        fs.writeFileSync(imagePath, imageBuffer);
-    
-        const imageUrl = `${req.protocol}://${req.get(
-          'host'
-        )}/uploads/${imageName}`;
-    
-        console.log('Image saved and accessible at:', imageUrl);
-    
-        getMeasureAI(imagePath);
-    
-        */
+        // 3. Processamento da imagem
+        const imagePath = await processImage(image, customer_code, measure_datetime, measure_type, req);
+        // 4. Realização da leitura via IA
+        const aiResult = await getMeasureAI(imagePath);
+        console.log(aiResult);
+        res.status(200).json({ working: 'yep' });
     }
     catch (error) {
         console.error('Erro processando upload:', error);
@@ -149,5 +138,5 @@ async function getMeasureAI(imagePath) {
             text: 'Descreva o produto que você está vendo',
         },
     ]);
-    console.log(result.response.text());
+    return result.response.text();
 }

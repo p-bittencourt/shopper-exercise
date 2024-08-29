@@ -103,7 +103,30 @@ function validateRequest(data: UploadRequestBody): ValidatedRequest {
   return { isValid: true };
 }
 
-export default async function uploadImage(req: Request, res: Response) {
+async function processImage(
+  image: string,
+  customer_code: string,
+  measure_datetime: string,
+  measure_type: 'WATER' | 'GAS',
+  req: Request
+): Promise<string> {
+  const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
+  const imageType = matches![1];
+  const base64dData = matches![2];
+
+  const imageBuffer = Buffer.from(base64dData, 'base64');
+
+  const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
+  const imagePath = path.join(rootPath, 'uploads', imageName);
+
+  fs.writeFileSync(imagePath, imageBuffer);
+
+  const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
+
+  return imagePath;
+}
+
+export default async function handlePostUpload(req: Request, res: Response) {
   try {
     const {
       image,
@@ -128,6 +151,7 @@ export default async function uploadImage(req: Request, res: Response) {
       });
     }
 
+    // 2. Validar leitura
     const hasExistingMeasure = checkExistingMeasure(
       customer_code,
       measure_datetime,
@@ -146,43 +170,26 @@ export default async function uploadImage(req: Request, res: Response) {
       });
     }
 
-    return res.status(200).json({ working: 'yep' });
-    /*
+    // 3. Processamento da imagem
+    const imagePath = await processImage(
+      image,
+      customer_code,
+      measure_datetime,
+      measure_type,
+      req
+    );
 
-    KEEP THIS UNUSED WHILE TESTING OTHER STEPS
-
-    // Extair o tipo da imagem e os dados base64
-    const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return res.status(400).json({ error: 'Formato de imagem inválido. ' });
-    }
-
-    const imageType = matches[1];
-    const base64dData = matches[2];
-
-    const imageBuffer = Buffer.from(base64dData, 'base64');
-
-    const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
-    const imagePath = path.join(rootPath, 'uploads', imageName);
-
-    fs.writeFileSync(imagePath, imageBuffer);
-
-    const imageUrl = `${req.protocol}://${req.get(
-      'host'
-    )}/uploads/${imageName}`;
-
-    console.log('Image saved and accessible at:', imageUrl);
-
-    getMeasureAI(imagePath);
-
-    */
+    // 4. Realização da leitura via IA
+    const aiResult = await getMeasureAI(imagePath);
+    console.log(aiResult);
+    res.status(200).json({ working: 'yep' });
   } catch (error) {
     console.error('Erro processando upload:', error);
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
-async function getMeasureAI(imagePath: string) {
+async function getMeasureAI(imagePath: string): Promise<string> {
   // Google AI File Manager and Generative AI
   const googleAIService = new GoogleAIService(apiKey);
 
@@ -211,5 +218,5 @@ async function getMeasureAI(imagePath: string) {
     },
   ]);
 
-  console.log(result.response.text());
+  return result.response.text();
 }
