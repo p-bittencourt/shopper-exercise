@@ -23,6 +23,58 @@ interface ValidatedRequest {
   error_description?: string;
 }
 
+interface ExistingMeasure {
+  validClient: boolean;
+  validMeasure?: boolean;
+  error_description?: string;
+}
+
+function checkExistingMeasure(
+  customer_code: string,
+  measure_datetime: string,
+  measure_type: 'WATER' | 'GAS'
+): ExistingMeasure {
+  // Estou utilizando um array de customers no meu código para testes, não um bd.
+  const customer = customers.find((c) => c.customer_code === customer_code);
+  // Verifica se o cliente está cadastrado
+  if (!customer) {
+    return {
+      validClient: false,
+      error_description: 'Código de cliente não encontrado.',
+    };
+  }
+
+  // Extrai o mês e o ano da medida
+  const measureMonth = new Date(measure_datetime).getMonth();
+  const measureYear = new Date(measure_datetime).getFullYear();
+
+  // Verifica se já existe a medida para o mesmo mês, ano e tipo
+  const existingMeasure = customer.measures.find((m) => {
+    const existingMonth = new Date(m.measure_datetime).getMonth();
+    const existingYear = new Date(m.measure_datetime).getFullYear();
+
+    return (
+      existingMonth === measureMonth &&
+      existingYear === measureYear &&
+      m.measure_type === measure_type
+    );
+  });
+
+  // Se encontrar uma medida correspondente, retorna erro
+  if (existingMeasure) {
+    return {
+      validClient: true,
+      validMeasure: false,
+      error_description: `Já existe uma leitura de ${measure_type} para ${
+        measureMonth + 1
+      }/${measureYear}`,
+    };
+  }
+
+  // Se o cliente é válido e não houver medida correspondente, retorna true
+  return { validClient: true, validMeasure: true };
+}
+
 function validateRequest(data: UploadRequestBody): ValidatedRequest {
   const { image, customer_code, measure_datetime, measure_type } = data;
 
@@ -74,11 +126,31 @@ export default async function uploadImage(req: Request, res: Response) {
         error_code: 'INVALID_DATA',
         error_description: validatedRequest.error_description,
       });
-    } else {
-      return res.status(200).json({ success: 'yep' });
     }
 
+    const hasExistingMeasure = checkExistingMeasure(
+      customer_code,
+      measure_datetime,
+      measure_type
+    );
+
+    if (!hasExistingMeasure.validClient) {
+      return res.status(408).json({
+        error_code: 'CLIENT_NOT_FOUND',
+        error_description: hasExistingMeasure.error_description,
+      });
+    } else if (!hasExistingMeasure.validMeasure) {
+      return res.status(409).json({
+        error_code: 'DOUBLE_REPORT',
+        error_description: hasExistingMeasure.error_description,
+      });
+    }
+
+    return res.status(200).json({ working: 'yep' });
     /*
+
+    KEEP THIS UNUSED WHILE TESTING OTHER STEPS
+
     // Extair o tipo da imagem e os dados base64
     const matches = image.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
@@ -88,13 +160,12 @@ export default async function uploadImage(req: Request, res: Response) {
     const imageType = matches[1];
     const base64dData = matches[2];
 
-    // DESABILITAR A CONEXÃO COM O GEMINI DURANTE OS TESTES DAS OUTRAS ETAPAS
     const imageBuffer = Buffer.from(base64dData, 'base64');
 
     const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
     const imagePath = path.join(rootPath, 'uploads', imageName);
 
-    // fs.writeFileSync(imagePath, imageBuffer);
+    fs.writeFileSync(imagePath, imageBuffer);
 
     const imageUrl = `${req.protocol}://${req.get(
       'host'
@@ -102,11 +173,12 @@ export default async function uploadImage(req: Request, res: Response) {
 
     console.log('Image saved and accessible at:', imageUrl);
 
-    // getMeasureAI(imagePath);
+    getMeasureAI(imagePath);
 
     */
   } catch (error) {
-    return res.status(500).json({ error: 'Falha ao fazer o envio da imagem.' });
+    console.error('Erro processando upload:', error);
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
