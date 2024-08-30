@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import { GoogleAIService } from '../services/GenerativeAIService.js';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import customers from '../models/testCustomers.js';
@@ -41,7 +42,7 @@ export default async function handlePostUpload(req, res) {
         // 3. Processamento da imagem
         const imageData = await processImage(image, customer_code, measure_datetime, measure_type, req);
         // 4. Realização da leitura via IA
-        const aiResult = await getMeasureAI('./src/hidro-1.png'); // Usando essa para testes o  real será imageData.imagePath
+        const aiResult = await getMeasureAI(imageData.imagePath); // Usando essa para testes o  real será imageData.imagePath
         // 5. Limpeza da leitura via IA para deixar apenas o valor em inteiro e registro de uma uuid para a medida
         const numericValue = aiResult.match(/\d+/g)?.join('') || '';
         let numericValueInt = parseInt(numericValue, 10);
@@ -123,7 +124,7 @@ async function processImage(image, customer_code, measure_datetime, measure_type
     const imageBuffer = Buffer.from(base64dData, 'base64');
     const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
     const imagePath = path.join(rootPath, 'uploads', imageName);
-    // fs.writeFileSync(imagePath, imageBuffer); desativado durante os testes
+    fs.writeFileSync(imagePath, imageBuffer);
     // URL da imagem para outros requests, em um projeto de produção ela poderia ser adicionada ao modelo da leitura para facilitar o acesso
     const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
     // Retorno o caminho da imagem para poder passá-lo para a função que integra com o Gemini

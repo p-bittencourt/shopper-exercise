@@ -201,7 +201,7 @@ async function processImage(
   const imageBuffer = Buffer.from(base64dData, 'base64');
   const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
   const imagePath = path.join(rootPath, 'uploads', imageName);
-  // fs.writeFileSync(imagePath, imageBuffer); desativado durante os testes
+  // fs.writeFileSync(imagePath, imageBuffer); desabilitado durante os teste
 
   // URL da imagem para outros requests, em um projeto de produção ela poderia ser adicionada ao modelo da leitura para facilitar o acesso
   const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
