@@ -110,7 +110,7 @@ function confirmedMeasure(measure_uuid: string): boolean {
 }
 
 function saveMeasure(measure_uuid: string) {
-  // Após passar pelas verificações nós transformamos o status .has_confirmed da measure em true
+  // Após passar pelas verificações nós transformamos o status .has_confirmed da measure em true, porém sem uma persistência real de dados neste exercício
   for (const customer of customers) {
     for (const measure of customer.measures) {
       if (measure.measure_uuid === measure_uuid) {

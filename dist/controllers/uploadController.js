@@ -42,7 +42,7 @@ export default async function handlePostUpload(req, res) {
         // 3. Processamento da imagem
         const imageData = await processImage(image, customer_code, measure_datetime, measure_type, req);
         // 4. Realização da leitura via IA
-        const aiResult = await getMeasureAI(imageData.imagePath); // Usando essa para testes o  real será imageData.imagePath
+        const aiResult = await getMeasureAI(imageData.imagePath);
         // 5. Limpeza da leitura via IA para deixar apenas o valor em inteiro e registro de uma uuid para a medida
         const numericValue = aiResult.match(/\d+/g)?.join('') || '';
         let numericValueInt = parseInt(numericValue, 10);

@@ -88,7 +88,7 @@ export default async function handlePostUpload(req: Request, res: Response) {
     );
 
     // 4. Realização da leitura via IA
-    const aiResult = await getMeasureAI(imageData.imagePath); // Usando essa para testes o  real será imageData.imagePath
+    const aiResult = await getMeasureAI(imageData.imagePath);
 
     // 5. Limpeza da leitura via IA para deixar apenas o valor em inteiro e registro de uma uuid para a medida
     const numericValue = aiResult.match(/\d+/g)?.join('') || '';
