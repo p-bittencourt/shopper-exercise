@@ -1,6 +1,7 @@
 # Shopper API
 
 Esta é uma API desenvolvida como parte do desafio para a vaga na Shopper. Foi construída utilizando TypeScript, Express e Gemini API.
+Esta etapa ainda não conta com integração com Bancos de Dados, e utiliza um array de customers para testes e validações.
 
 ## Autor
 
