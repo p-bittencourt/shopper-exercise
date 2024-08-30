@@ -3,7 +3,7 @@ export default async function handlePatchConfirm(req, res) {
     // Aqui eu fiquei em dúvida, para salvar a leitura para o cliente, eu penso que precisaria também do customer_code enviado via request, para associar a medida ao cliente
     // Estou com alguns customers de teste em um array usando a estrutura sugerida do método GET/<customer code>/list, sem integração com banco de dados por enquanto
     // Além disso, o template de testCustomers não previa um valor salvo, então não conferi o valor da medida do PATCH, com a cadastrada nos testCustomers, porém seria simples de implementar caso necessário
-    // Poderia também ter sido salvo inicialmente no POST /upload, com o measure.has_confirmed marcado como false, e então usar o PATCH para marcar o measure.has_confirmed como true
+    // O valor da medição também poderia ter sido salvo inicialmente no POST /upload, com o measure.has_confirmed marcado como false, e então usar o PATCH para marcar o measure.has_confirmed como true se tudo conferisse
     // Também pensei sobre criar um array de medidas separado, usando as uuids como referência para associar com os customers, porém assim como o bd dos customers, não deu tempo de implementar
     // Então deixo essa abordagem simples aqui
     try {

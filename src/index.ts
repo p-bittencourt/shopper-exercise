@@ -4,6 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import handlePostUpload from './controllers/uploadController.js';
 import handlePatchConfirm from './controllers/patchController.js';
+import handleGetCustomerMeasures from './controllers/getController.js';
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -17,7 +18,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.post('/upload', handlePostUpload);
 app.patch('/confirm', handlePatchConfirm);
-app.get('/:customerCode/list', (req, res) => {});
+app.get('/:customerCode/list', handleGetCustomerMeasures);
 
 app.use(
   (

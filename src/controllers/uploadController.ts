@@ -88,7 +88,7 @@ export default async function handlePostUpload(req: Request, res: Response) {
     );
 
     // 4. Realização da leitura via IA
-    const aiResult = await getMeasureAI('./src/hidro-1.png'); // Usando essa para testes o  real será imageData.imagePath
+    const aiResult = await getMeasureAI(imageData.imagePath); // Usando essa para testes o  real será imageData.imagePath
 
     // 5. Limpeza da leitura via IA para deixar apenas o valor em inteiro e registro de uma uuid para a medida
     const numericValue = aiResult.match(/\d+/g)?.join('') || '';
@@ -201,7 +201,7 @@ async function processImage(
   const imageBuffer = Buffer.from(base64dData, 'base64');
   const imageName = `${customer_code}_${measure_datetime}_${measure_type}.${imageType}`;
   const imagePath = path.join(rootPath, 'uploads', imageName);
-  // fs.writeFileSync(imagePath, imageBuffer); desabilitado durante os teste
+  fs.writeFileSync(imagePath, imageBuffer);
 
   // URL da imagem para outros requests, em um projeto de produção ela poderia ser adicionada ao modelo da leitura para facilitar o acesso
   const imageUrl = `${req.protocol}://${req.get('host')}/uploads/${imageName}`;
