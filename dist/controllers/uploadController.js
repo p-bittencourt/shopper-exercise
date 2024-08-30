@@ -8,6 +8,58 @@ const apiKey = process.env.GEMINI_API_KEY || '';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootPath = path.join(__dirname, '..', '..');
+export default async function handlePostUpload(req, res) {
+    try {
+        const { image, customer_code, measure_datetime, measure_type, } = req.body;
+        // 1. Validar entradas
+        const validatedRequest = validateRequest({
+            image,
+            customer_code,
+            measure_datetime,
+            measure_type,
+        });
+        if (!validatedRequest.isValid) {
+            return res.status(400).json({
+                error_code: 'INVALID_DATA',
+                error_description: validatedRequest.error_description,
+            });
+        }
+        // 2. Validar leitura
+        const hasExistingMeasure = checkExistingMeasure(customer_code, measure_datetime, measure_type);
+        if (!hasExistingMeasure.validClient) {
+            return res.status(408).json({
+                error_code: 'CLIENT_NOT_FOUND',
+                error_description: hasExistingMeasure.error_description,
+            });
+        }
+        else if (!hasExistingMeasure.validMeasure) {
+            return res.status(409).json({
+                error_code: 'DOUBLE_REPORT',
+                error_description: hasExistingMeasure.error_description,
+            });
+        }
+        // 3. Processamento da imagem
+        const imageData = await processImage(image, customer_code, measure_datetime, measure_type, req);
+        // 4. Realização da leitura via IA
+        const aiResult = await getMeasureAI('./src/hidro-1.png'); // Usando essa para testes o  real será imageData.imagePath
+        // 5. Limpeza da leitura via IA para deixar apenas o valor em inteiro e registro de uma uuid para a medida
+        const numericValue = aiResult.match(/\d+/g)?.join('') || '';
+        let numericValueInt = parseInt(numericValue, 10);
+        const measureId = uuidv4();
+        if (isNaN(numericValueInt)) {
+            numericValueInt = 0;
+        }
+        return res.status(200).json({
+            image_url: imageData.imageUrl,
+            measure_value: numericValueInt,
+            measure_uuid: measureId,
+        });
+    }
+    catch (error) {
+        console.error('Erro processando upload:', error);
+        return res.status(500).json({ error: 'Internal Server Error' });
+    }
+}
 function validateRequest(data) {
     // Nesta função vamos validar os dados recebidos via POST e enviar mensagens apropriadas
     const { image, customer_code, measure_datetime, measure_type } = data;
@@ -101,56 +153,4 @@ async function getMeasureAI(imagePath) {
         },
     ]);
     return result.response.text();
-}
-export default async function handlePostUpload(req, res) {
-    try {
-        const { image, customer_code, measure_datetime, measure_type, } = req.body;
-        // 1. Validar entradas
-        const validatedRequest = validateRequest({
-            image,
-            customer_code,
-            measure_datetime,
-            measure_type,
-        });
-        if (!validatedRequest.isValid) {
-            return res.status(400).json({
-                error_code: 'INVALID_DATA',
-                error_description: validatedRequest.error_description,
-            });
-        }
-        // 2. Validar leitura
-        const hasExistingMeasure = checkExistingMeasure(customer_code, measure_datetime, measure_type);
-        if (!hasExistingMeasure.validClient) {
-            return res.status(408).json({
-                error_code: 'CLIENT_NOT_FOUND',
-                error_description: hasExistingMeasure.error_description,
-            });
-        }
-        else if (!hasExistingMeasure.validMeasure) {
-            return res.status(409).json({
-                error_code: 'DOUBLE_REPORT',
-                error_description: hasExistingMeasure.error_description,
-            });
-        }
-        // 3. Processamento da imagem
-        const imageData = await processImage(image, customer_code, measure_datetime, measure_type, req);
-        // 4. Realização da leitura via IA
-        const aiResult = await getMeasureAI('./src/hidro-1.png'); // Usando essa para testes o  real será imageData.imagePath
-        // 5. Limpeza da leitura via IA para deixar apenas o valor em inteiro e registro de uma uuid para a medida
-        const numericValue = aiResult.match(/\d+/g)?.join('') || '';
-        let numericValueInt = parseInt(numericValue, 10);
-        const measureId = uuidv4();
-        if (isNaN(numericValueInt)) {
-            numericValueInt = 0;
-        }
-        return res.status(200).json({
-            image_url: imageData.imageUrl,
-            measure_value: numericValueInt,
-            measure_uuid: measureId,
-        });
-    }
-    catch (error) {
-        console.error('Erro processando upload:', error);
-        return res.status(500).json({ error: 'Internal Server Error' });
-    }
 }
